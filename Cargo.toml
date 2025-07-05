@@ -1,0 +1,11 @@
+[package]
+name = "lflist_request"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+reqwest = { version = "0.12.22", features = ["json", "blocking"] }
+scraper = "0.23.1"
+tokio = { version = "1.46.0", features = ["full"] }
+urlencoding = "2.1.3"
