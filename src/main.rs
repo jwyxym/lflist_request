@@ -82,7 +82,6 @@ async fn find_code (name: &str) ->  Result<String> {
             return Ok(code.to_string());
         }
     }
-    println!("need use url");
     let url: String = format!("https://ygocdb.com/?search={}", encode(name));
     let response: reqwest::Response = reqwest::get(url).await?;
     let body: String = response.text().await?;
