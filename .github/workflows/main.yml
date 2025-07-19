@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -22,8 +22,10 @@ jobs:
         run: cargo build --release
       
       - name: Upload Executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-binaries
           path: |
             target/release/*.exe
+            target/release/*.pdb  # 如果需要调试符号文件
+          if-no-files-found: error
