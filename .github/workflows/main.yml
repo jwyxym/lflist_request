@@ -1,0 +1,29 @@
+name: Rust Release Build
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build and Upload Artifact
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      
+      - name: Build Release
+        run: cargo build --release
+      
+      - name: Upload Executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-binaries
+          path: |
+            target/release/*.exe
