@@ -27,5 +27,4 @@ jobs:
           name: release-binaries
           path: |
             target/release/*.exe
-            target/release/*.pdb  # 如果需要调试符号文件
           if-no-files-found: error
