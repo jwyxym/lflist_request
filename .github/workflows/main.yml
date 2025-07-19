@@ -2,11 +2,12 @@ name: Rust Release Build
 
 on:
   push:
-    branches: [ master ]
+    tags:
+      - 'v*'
 
 jobs:
   build:
-    name: Build and Upload Artifact
+    name: Build and Release
     runs-on: windows-latest
     
     steps:
@@ -21,19 +22,23 @@ jobs:
       - name: Build Release
         run: cargo build --release
       
-      - name: Upload Executable
-        uses: actions/upload-artifact@v4
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: release-binaries
-          path: |
-            target/release/lflist_request.exe
-          if-no-files-found: error
-      - name: Upload to Release
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: target/release/lflist_request.exe
           asset_name: lflist_request.exe
           asset_content_type: application/octet-stream
