@@ -49,7 +49,6 @@ async fn main() -> Result<()> {
             for td in element.select(&Selector::parse(".cell-ocg").unwrap()) {
                 let name: String = td.text().collect::<String>();
                 let code: String = find_code(&name).await?;
-                // let code: String = "1".to_string();
                 println!("{} {} --{}", code, i.ct, name);
                 lines.push(format!("{} {} --{}", code, i.ct, name));
             }
@@ -76,9 +75,9 @@ async fn find_code (name: &str) ->  Result<String> {
     let file: std::fs::File = std::fs::File::open("lflist.conf")?;
     let reader: std::io::BufReader<std::fs::File> = std::io::BufReader::new(file);
     for line in reader.lines().skip(1) {
-        let line = line?;
+        let line: String = line?;
         if line.contains(name) {
-            let code = line.split(" ").next().unwrap();
+            let code: &str = line.split(" ").next().unwrap();
             return Ok(code.to_string());
         }
     }
