@@ -23,10 +23,13 @@ jobs:
       
       - name: Build Release
         run: |
-          refName="${{ github.ref_name }}"
-          year=$(echo "$refName" | cut -d '.' -f 1)
-          month=$(echo "$refName" | cut -d '.' -f 2)
-          cargo run --release -- "$year" "$month"
+          $refName = "2025.7"
+          # 分割为年份和月份
+          $parts = $refName -split '\.'
+          $year = $parts[0]
+          $month = $parts[1]
+          cargo run --release -- $year $month
+        shell: pwsh
       
       - name: Create Release
         id: create_release
