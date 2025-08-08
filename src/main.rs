@@ -13,13 +13,18 @@ struct LflistType<'t> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut input: Vec<String> = vec![String::new(), String::new()];
-    println!("请输入年份:");
-    std::io::stdin().read_line(&mut input[0]).expect("");
-    println!("请输入月份（1、4、7、10）:");
-    std::io::stdin().read_line(&mut input[1]).expect("");
-    let year: &str = input[0].trim();
-    let month: &str = input[1].trim();
+    let mut args: Vec<String> = std::env::args().collect();
+    println!("程序路径: {}", args[0]);
+    if args.len() < 2 {
+        println!("请输入年份:");
+        std::io::stdin().read_line(&mut args[1]).expect("");
+    }
+    if args.len() < 3 {
+        println!("请输入月份（1、4、7、10）:");
+        std::io::stdin().read_line(&mut args[2]).expect("");
+    }
+    let year: &str = args[1].trim();
+    let month: &str = args[2].trim();
     let url: String = format!("https://www.yugioh-card.com/japan/event/limitregulation/index.php?list={}{}", year, format!("{:0>2}", month));
     let response: reqwest::Response = reqwest::get(url).await?;
     let body: String = response.text().await?;
@@ -63,8 +68,7 @@ async fn main() -> Result<()> {
     let mut chk: bool = false;
     for (i, line) in reader.lines().enumerate() {
         let line: String = line?;
-        println!("{}", &line);
-        if (i == 0 && line.starts_with("#")) {
+        if i == 0 && line.starts_with("#") {
             lines.insert(0, format!("#[{}.{}]{}", year, month, line.replace("#", "")));
             chk = true;
         } else {

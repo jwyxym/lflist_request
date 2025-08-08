@@ -3,7 +3,7 @@ name: Rust Release Build
 on:
   push:
     tags:
-      - 'v*'
+      - '[0-9]*'
 
 jobs:
   build:
@@ -22,7 +22,13 @@ jobs:
           override: true
       
       - name: Build Release
-        run: cargo build --release
+        run: |
+          $tagName = "${{ github.ref_name }}"
+          $tagWithSpaces = $tagName -replace '\.', ' '
+          cargo build --release
+          cd target
+          cd release
+          "lflist_request.exe" -- $tagWithSpaces
       
       - name: Create Release
         id: create_release
@@ -44,3 +50,13 @@ jobs:
           asset_path: target/release/lflist_request.exe
           asset_name: lflist_request.exe
           asset_content_type: application/octet-stream
+          
+      - name: Upload Lflist Conf
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: target/release/lflist.conf
+          asset_name: lflist.conf
+          asset_content_type: text/plain
