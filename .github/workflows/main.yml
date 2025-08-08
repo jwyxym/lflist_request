@@ -28,7 +28,7 @@ jobs:
           cargo build --release
           cd target
           cd release
-          .\lflist_request.exe -- $tagWithSpaces
+          .\lflist_request.exe "--" $tagWithSpaces
       
       - name: Create Release
         id: create_release
