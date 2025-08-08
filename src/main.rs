@@ -43,6 +43,9 @@ async fn main() -> Result<()> {
     let body: Html = Html::parse_document(&body);
     let mut lines: Vec<String> = Vec::new();
     lines.push(format!("!{}.{}", year, month).to_string());
+    if !std::fs::metadata("lflist.conf").is_ok() {
+        std::fs::write("lflist.conf", "")?;
+    }
     for i in &vec {
         lines.push(format!("{}", i.write));
         if let Some(element) = body.select(&Selector::parse(i.id).unwrap()).next() {
@@ -57,12 +60,19 @@ async fn main() -> Result<()> {
     lines.push("".to_string());
     let file: std::fs::File = std::fs::File::open("lflist.conf")?;
     let reader: std::io::BufReader<std::fs::File> = std::io::BufReader::new(file);
+    let mut chk: bool = false;
     for (i, line) in reader.lines().enumerate() {
-        if i == 0 {
-            lines.insert(0, format!("#[{}.{}]{}", year, month, line?.replace("#", "")));
+        let line: String = line?;
+        println!("{}", &line);
+        if (i == 0 && line.starts_with("#")) {
+            lines.insert(0, format!("#[{}.{}]{}", year, month, line.replace("#", "")));
+            chk = true;
         } else {
-            lines.push(line?.to_string());
+            lines.push(line.to_string());
         }
+    }
+    if !chk {
+        lines.insert(0, format!("#[{}.{}]", year, month));
     }
     let mut file: std::fs::File = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("lflist.conf")?;
     for i in lines {
