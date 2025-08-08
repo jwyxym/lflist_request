@@ -14,12 +14,14 @@ struct LflistType<'t> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut args: Vec<String> = std::env::args().collect();
-    println!("程序路径: {}", args[0]);
-    if args.len() < 2 {
+    while args.len() < 3 {
+        args.push(String::new());
+    }
+    if args[1].is_empty() {
         println!("请输入年份:");
         std::io::stdin().read_line(&mut args[1]).expect("");
     }
-    if args.len() < 3 {
+    if args[2].is_empty() {
         println!("请输入月份（1、4、7、10）:");
         std::io::stdin().read_line(&mut args[2]).expect("");
     }

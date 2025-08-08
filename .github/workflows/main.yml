@@ -23,9 +23,10 @@ jobs:
       
       - name: Build Release
         run: |
-          $refName = "${{ github.ref_name }}"
-          $modifiedRef = $refName -replace '\.', ' '
-          cargo run --release -- $modifiedRef
+          refName="${{ github.ref_name }}"
+          year=$(echo "$refName" | cut -d '.' -f 1)
+          month=$(echo "$refName" | cut -d '.' -f 2)
+          cargo run --release -- "$year" "$month"
       
       - name: Create Release
         id: create_release
