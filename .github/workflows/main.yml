@@ -3,7 +3,7 @@ name: Rust Release Build
 on:
   push:
     tags:
-      - '[0-9]*'
+      - '[A-Z]*'
 
 jobs:
   build:
