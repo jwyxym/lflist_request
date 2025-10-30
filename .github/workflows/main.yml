@@ -23,12 +23,12 @@ jobs:
       
       - name: Build Release
         run: |
-          $refName = "2025.7"
-          # 分割为年份和月份
-          $parts = $refName -split '\.'
-          $year = $parts[0]
-          $month = $parts[1]
-          cargo run --release -- $year $month
+          $parts = ${{ github.ref_name }} -split '\.'
+          $ot = $parts[0]
+          $year = $parts[1]
+          $month = $parts[2]
+          $date = $parts[3]
+          cargo run --release $ot $year $month $date
         shell: pwsh
       
       - name: Create Release
