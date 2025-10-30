@@ -23,7 +23,7 @@ jobs:
       
       - name: Build Release
         run: |
-          $parts = ${{ github.ref_name }} -split '\.'
+          $parts = "${{ github.ref_name }}" -split '\.'
           $ot = $parts[0]
           $year = $parts[1]
           $month = $parts[2]
