@@ -29,11 +29,11 @@ async fn main() -> Result<()> {
     }
     if args[2].is_empty() {
         println!("请输入年份:");
-        std::io::stdin().read_line(&mut args[1]).expect("");
+        std::io::stdin().read_line(&mut args[2]).expect("");
     }
     if args[3].is_empty() {
         println!("请输入月份（1、4、7、10）:");
-        std::io::stdin().read_line(&mut args[2]).expect("");
+        std::io::stdin().read_line(&mut args[3]).expect("");
     }
     if args[4].is_empty() && args[1].trim() == "TCG" {
         println!("请输入日期:");
@@ -117,7 +117,7 @@ async fn main() -> Result<()> {
                     j += 1;
                 }
                 let ct: i8 = find_ct(forbbiden)?;
-                let find: Card = find_code(&name, 1).await?;
+                let find: Card = find_code(&name.replace('’', "'"), 1).await?;
                 let code: String = find.code;
                 let name: String = find.name;
                 println!("{} {} --{}", code, ct, name);
@@ -134,14 +134,14 @@ async fn main() -> Result<()> {
     for (i, line) in reader.lines().enumerate() {
         let line: String = line?;
         if i == 0 && line.starts_with("#") {
-            lines.insert(0, format!("#[{}.{}]{}", year, month, line.replace("#", "")));
+            lines.insert(0, format!("#[{}.{} TCG]{}", year, month, line.replace("#", "")));
             chk = true;
         } else {
             lines.push(line.to_string());
         }
     }
     if !chk {
-        lines.insert(0, format!("#[{}.{}]", year, month));
+        lines.insert(0, format!("#[{}.{} TCG]", year, month));
     }
     let mut file: std::fs::File = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("lflist.conf")?;
     for i in lines {
@@ -179,7 +179,8 @@ async fn find_code (name: &str, ot: usize) ->  Result<Card, Error> {
         }
     }
     let name: String = name.replace("–", "");
-    let url: String = format!("https://ygocdb.com/?search={}", encode(&name));
+    let search_name = encode(&name).replace(" ", "");
+    let url: String = format!("https://ygocdb.com/?search={}", search_name);
     let response: reqwest::Response = reqwest::get(url).await?;
     let body: String = response.text().await?;
     let body: Html = Html::parse_document(&body);
@@ -203,7 +204,7 @@ async fn find_code (name: &str, ot: usize) ->  Result<Card, Error> {
         }
     }
     Ok(Card {
-        name: "".to_string(),
+        name: name,
         code: "".to_string()
     })
 }
