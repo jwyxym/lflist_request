@@ -75,7 +75,7 @@ async fn main() -> Result<()> {
             if let Some(element) = body.select(&Selector::parse(i.id).unwrap()).next() {
                 for td in element.select(&Selector::parse(".cell-ocg").unwrap()) {
                     let name: String = td.text().collect::<String>();
-                    let code: String = find_code(&name, 0).await?.name;
+                    let code: String = find_code(&name, 0).await?.code;
                     println!("{} {} --{}", code, i.ct, name);
                     lines.push(format!("{} {} --{}", code, i.ct, name));
                 }
