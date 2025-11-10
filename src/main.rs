@@ -5,6 +5,8 @@ use std::{i8};
 use urlencoding::{encode};
 use std::io::{BufRead};
 use std::io::Write;
+use regex::Regex;
+use serde::Deserialize;
 struct LflistType<'t> {
     id: &'t str,
     write: &'t str,
@@ -14,6 +16,21 @@ struct LflistType<'t> {
 struct Card {
     name: String,
     code: String
+}
+#[derive(Debug, Deserialize)]
+struct CnLflist {
+    name: String,
+    list: Vec<CnLflistList>
+}
+
+#[derive(Debug, Deserialize)]
+struct CnLflistList {
+    list: Vec<CnLflistItem>
+}
+
+#[derive(Debug, Deserialize)]
+struct CnLflistItem {
+    name: String
 }
 
 
@@ -28,10 +45,10 @@ async fn main() -> Result<()> {
         std::io::stdin().read_line(&mut args[1]).expect("");
     }
     if args[2].is_empty() {
-        println!("请输入年份:");
+        println!("{}", if args[1].trim() != "CN" { "请输入年份:" } else { "请输入卡表id:" });
         std::io::stdin().read_line(&mut args[2]).expect("");
     }
-    if args[3].is_empty() {
+    if args[3].is_empty() && args[1].trim() != "CN" {
         println!("请输入月份（1、4、7、10）:");
         std::io::stdin().read_line(&mut args[3]).expect("");
     }
@@ -39,94 +56,159 @@ async fn main() -> Result<()> {
         println!("请输入日期:");
         std::io::stdin().read_line(&mut args[2]).expect("");
     }
-    let ot: &str = args[1].trim();
-    let year: &str = args[2].trim();
-    let month: &str = args[3].trim();
-    let date: &str = args[4].trim();
+    let ot: String = args[1].trim().to_string();
+    let mut year: String = args[2].trim().to_string();
+    let mut month: String = args[3].trim().to_string();
+    let date: String = args[4].trim().to_string();
     let mut lines: Vec<String> = Vec::new();
-    if ot == "OCG" {
-        let url: String = format!("https://www.yugioh-card.com/japan/event/limitregulation/index.php?list={}{}", year, format!("{:0>2}", month));
-        let response: reqwest::Response = reqwest::get(url).await?;
-        let body: String = response.text().await?;
-        let vec: Vec<&LflistType> = vec![
-            &LflistType {
-                id: "#forbidden",
-                write: "#forbidden",
-                ct: 0,
-            },
-            &LflistType {
-                id: "#semilimited",
-                write: "#limit",
-                ct: 1,
-            },
-            &LflistType {
-                id: "#limited",
-                write: "#semi limit",
-                ct: 2,
-            },
-        ];
-        let body: Html = Html::parse_document(&body);
-        lines.push(format!("!{}.{}", year, month).to_string());
-        if !std::fs::metadata("lflist.conf").is_ok() {
-            std::fs::write("lflist.conf", "")?;
-        }
-        for i in &vec {
-            lines.push(format!("{}", i.write));
-            if let Some(element) = body.select(&Selector::parse(i.id).unwrap()).next() {
-                for td in element.select(&Selector::parse(".cell-ocg").unwrap()) {
-                    let name: String = td.text().collect::<String>();
-                    let code: String = find_code(&name, 0).await?.code;
-                    println!("{} {} --{}", code, i.ct, name);
-                    lines.push(format!("{} {} --{}", code, i.ct, name));
-                }
-            }
-        }
-        lines.push("".to_string());
-    } else {
-        let url: String = format!("https://www.yugioh-card.com/en/limited/list_{}-{}-{}/", year, format!("{:0>2}", month), date);
-        let response: reqwest::Response = reqwest::get(url).await?;
-        let body: String = response.text().await?;
-        let body: Html = Html::parse_document(&body);
-        lines.push(format!("!{}.{}", year, month).to_string());
-        if !std::fs::metadata("lflist.conf").is_ok() {
-            std::fs::write("lflist.conf", "")?;
-        }
-        let mut i = 0;
-        let _write = ["#forbidden", "#limit", "#semi limit"];
-        let select = Selector::parse(".cardlist").unwrap();
-        let tables: Vec<ElementRef<'_>> = body.select(&select).collect();
-        for table in tables {
-            if i >= 3 {
-                break;
-            }
-            lines.push(format!("{}", _write[i]));
-            i += 1;
-            for tr in table.select(&Selector::parse("tr").unwrap()).skip(1) {
-                let select = Selector::parse("td").unwrap();
-                let tds = tr.select(&select);
-                let mut name: String = "".to_string();
-                let mut forbbiden: String = "".to_string();
-                let mut j = 0;
-                for td in tds {
-                    let text = td.text().collect::<String>();
-                    if j == 1 {
-                        name = text;
-                    } else if j == 2 {
-                        forbbiden = text;
+    match ot.as_str() {
+        "OCG" => {
+            let url: String = format!("https://www.yugioh-card.com/japan/event/limitregulation/index.php?list={}{}", &year, format!("{:0>2}", &month));
+            let response: reqwest::Response = reqwest::get(url).await?;
+            let body: String = response.text().await?;
+            let vec: Vec<&LflistType> = vec![
+                &LflistType {
+                    id: "#forbidden",
+                    write: "#forbidden",
+                    ct: 0,
+                },
+                &LflistType {
+                    id: "#semilimited",
+                    write: "#limit",
+                    ct: 1,
+                },
+                &LflistType {
+                    id: "#limited",
+                    write: "#semi limit",
+                    ct: 2,
+                },
+            ];
+            let body: Html = Html::parse_document(&body);
+            lines.push(format!("!{}.{}", &year, &month).to_string());
+            for i in &vec {
+                lines.push(format!("{}", i.write));
+                if let Some(element) = body.select(&Selector::parse(i.id).unwrap()).next() {
+                    for td in element.select(&Selector::parse(".cell-ocg").unwrap()) {
+                        let name: String = td.text().collect::<String>();
+                        let code: String = find_code(&name, 0).await?.code;
+                        println!("{} {} --{}", code, i.ct, name);
+                        lines.push(format!("{} {} --{}", code, i.ct, name));
                     }
-                    j += 1;
                 }
-                let ct: i8 = find_ct(forbbiden)?;
-                let find: Card = find_code(&name.replace('’', "'"), 1).await?;
-                let code: String = find.code;
-                let name: String = find.name;
-                println!("{} {} --{}", code, ct, name);
-                if ct < 3 {
+            }
+            lines.push("".to_string());
+        }
+        "TCG" => {
+            let url: String = format!("https://www.yugioh-card.com/en/limited/list_{}-{}-{}/", &year, format!("{:0>2}", &month), &date);
+            let response: reqwest::Response = reqwest::get(url).await?;
+            let body: String = response.text().await?;
+            let body: Html = Html::parse_document(&body);
+            lines.push(format!("!{}.{} TCG", &year, &month).to_string());
+            let mut i = 0;
+            let _write = ["#forbidden", "#limit", "#semi limit"];
+            let select = Selector::parse(".cardlist").unwrap();
+            let tables: Vec<ElementRef<'_>> = body.select(&select).collect();
+            for table in tables {
+                if i >= 3 {
+                    break;
+                }
+                lines.push(format!("{}", _write[i]));
+                i += 1;
+                for tr in table.select(&Selector::parse("tr").unwrap()).skip(1) {
+                    let select = Selector::parse("td").unwrap();
+                    let tds = tr.select(&select);
+                    let mut name: String = "".to_string();
+                    let mut forbbiden: String = "".to_string();
+                    let mut j = 0;
+                    for td in tds {
+                        let text = td.text().collect::<String>();
+                        if j == 1 {
+                            name = text;
+                        } else if j == 2 {
+                            forbbiden = text;
+                        }
+                        j += 1;
+                    }
+                    let ct: i8 = find_ct(forbbiden)?;
+                    let find: Card = find_code(&name.replace('’', "'"), 1).await?;
+                    let code: String = find.code;
+                    let name: String = find.name;
+                    println!("{} {} --{}", code, ct, name);
+                    if ct < 3 {
+                        lines.push(format!("{} {} --{}", code, ct, name));
+                    }
+                }
+            }
+            lines.push("".to_string());
+        }
+        "CN" => {
+            let url: String = format!("https://gamekingapi.windoent.com/forbidden/forbbidengroup/webinfo/{}", &year);
+            let response: reqwest::Response = reqwest::get(url).await?;
+            let body: CnLflist = response.json().await?;
+            let text: String = body.name;
+            let re: Regex = Regex::new(r"第\d+次更新：([0-9]{4}/[0-9]{1,2})\s*适用").unwrap();
+            if let Some(captures) = re.captures(&text) {
+                if let Some(date_match) = captures.get(1) {
+                    let mut date = date_match.as_str().split('/');
+                    year = date.next().unwrap().to_string();
+                    month = date.next().unwrap().to_string();
+                    lines.push(format!("!{}.{} CN", &year, &month).to_string());
+                }
+            }
+            for ct in 0..body.list.len() - 1 {
+                for item in body.list.get(ct).unwrap().list.iter() {
+                    let name: String = item.name.clone();
+                    let find: Card = find_code(&name, 1).await?;
+                    let code: String = find.code;
+                    println!("{} {} --{}", code, ct, name);
                     lines.push(format!("{} {} --{}", code, ct, name));
                 }
             }
+            // if let Some(element) = body.select(&Selector::parse(".wd-hide-xl").unwrap()).next() {
+            //     if let Some(h2) = element.select(&Selector::parse("h2").unwrap()).next() {
+            //         let text = h2.text().collect::<String>().trim().to_string();
+            //         let re = Regex::new(r"第\d+次更新：([0-9]{4}/[0-9]{1,2})\s*适用").unwrap();
+            //         if let Some(captures) = re.captures(&text) {
+            //             if let Some(date_match) = captures.get(1) {
+            //                 let mut date = date_match.as_str().split('/');
+            //                 year = date.next().unwrap().to_string();
+            //                 month = date.next().unwrap().to_string();
+            //                 lines.push(format!("!{}.{} CN", &year, &month).to_string());
+            //             }
+            //         }
+            //     }
+            //     for ul in element.select(&Selector::parse(".limiter-rule-list").unwrap()) {
+            //         if let Some(p) = ul.select(&Selector::parse("p").unwrap()).next() {
+            //             let text: String = p.text().collect::<String>().trim().to_string();
+            //             let mut ct: i32 = 0;
+            //             match text.as_str() {
+            //                 "公认比赛中，不能投入在主卡组、副卡组及额外卡组中的卡牌。" => {}
+            //                 "于公认比赛中，在主卡组、副卡组及额外卡组合计每种最多只能使用1张的卡牌。" => {
+            //                     ct += 1;
+            //                 }
+            //                 "于公认比赛中，在主卡组、副卡组及额外卡组合计每种最多只能使用2张的卡牌。" => {
+            //                     ct += 2;
+            //                 }
+            //                 _ => {}
+            //             }
+            //             for card_content in ul.select(&Selector::parse(".card-content").unwrap()) {
+            //                 if let Some(p) = card_content.select(&Selector::parse("span").unwrap()).next() {
+            //                     let name: String = p.text().collect::<String>();
+            //                     let find: Card = find_code(&name, 1).await?;
+            //                     let code: String = find.code;
+            //                     println!("{} {} --{}", code, ct, name);
+            //                     lines.push(format!("{} {} --{}", code, ct, name));
+            //                 }
+            //             }
+            //         }
+            //     }
+
+            // }
         }
-        lines.push("".to_string());
+        _ => {}
+    }
+    if !std::fs::metadata("lflist.conf").is_ok() {
+        std::fs::write("lflist.conf", "")?;
     }
     let file: std::fs::File = std::fs::File::open("lflist.conf")?;
     let reader: std::io::BufReader<std::fs::File> = std::io::BufReader::new(file);
@@ -134,14 +216,14 @@ async fn main() -> Result<()> {
     for (i, line) in reader.lines().enumerate() {
         let line: String = line?;
         if i == 0 && line.starts_with("#") {
-            lines.insert(0, format!("#[{}.{} TCG]{}", year, month, line.replace("#", "")));
+            lines.insert(0, format!("#[{}.{}{}]{}", &year, &month, if ot == "TCG".to_string() { " TCG" } else if ot == "CN".to_string() { " CN" } else { "" }, line.replace("#", "")));
             chk = true;
         } else {
             lines.push(line.to_string());
         }
     }
     if !chk {
-        lines.insert(0, format!("#[{}.{} TCG]", year, month));
+        lines.insert(0, format!("#[{}.{}{}]", &year, &month, if ot == "TCG".to_string() { " TCG" } else if ot == "CN".to_string() { " CN" } else { "" }));
     }
     let mut file: std::fs::File = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open("lflist.conf")?;
     for i in lines {
@@ -166,16 +248,18 @@ fn find_ct (forbidden: String) ->  Result<i8> {
 }
 
 async fn find_code (name: &str, ot: usize) ->  Result<Card, Error> {
-    let file: std::fs::File = std::fs::File::open("lflist.conf")?;
-    let reader: std::io::BufReader<std::fs::File> = std::io::BufReader::new(file);
-    for line in reader.lines().skip(1) {
-        let line: String = line?;
-        if line.contains(name) {
-            let code: Vec<&str> = line.split(" ").collect();
-            return Ok(Card {
-                name: code[2].to_string(),
-                code: code[0].to_string()
-            });
+    if std::fs::metadata("lflist.conf").is_ok() {
+        let file: std::fs::File = std::fs::File::open("lflist.conf")?;
+        let reader: std::io::BufReader<std::fs::File> = std::io::BufReader::new(file);
+        for line in reader.lines().skip(1) {
+            let line: String = line?;
+            if line.contains(name) {
+                let code: Vec<&str> = line.split(" ").collect();
+                return Ok(Card {
+                    name: code[2].to_string(),
+                    code: code[0].to_string()
+                });
+            }
         }
     }
     let name: String = name.replace("–", "");

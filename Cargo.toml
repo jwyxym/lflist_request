@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
+regex = "1.12.2"
 reqwest = { version = "0.12.22", features = ["json", "blocking"] }
 scraper = "0.23.1"
+serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.46.0", features = ["full"] }
 urlencoding = "2.1.3"
