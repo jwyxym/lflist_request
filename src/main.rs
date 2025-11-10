@@ -164,49 +164,11 @@ async fn main() -> Result<()> {
                     lines.push(format!("{} {} --{}", code, ct, name));
                 }
             }
-            // if let Some(element) = body.select(&Selector::parse(".wd-hide-xl").unwrap()).next() {
-            //     if let Some(h2) = element.select(&Selector::parse("h2").unwrap()).next() {
-            //         let text = h2.text().collect::<String>().trim().to_string();
-            //         let re = Regex::new(r"第\d+次更新：([0-9]{4}/[0-9]{1,2})\s*适用").unwrap();
-            //         if let Some(captures) = re.captures(&text) {
-            //             if let Some(date_match) = captures.get(1) {
-            //                 let mut date = date_match.as_str().split('/');
-            //                 year = date.next().unwrap().to_string();
-            //                 month = date.next().unwrap().to_string();
-            //                 lines.push(format!("!{}.{} CN", &year, &month).to_string());
-            //             }
-            //         }
-            //     }
-            //     for ul in element.select(&Selector::parse(".limiter-rule-list").unwrap()) {
-            //         if let Some(p) = ul.select(&Selector::parse("p").unwrap()).next() {
-            //             let text: String = p.text().collect::<String>().trim().to_string();
-            //             let mut ct: i32 = 0;
-            //             match text.as_str() {
-            //                 "公认比赛中，不能投入在主卡组、副卡组及额外卡组中的卡牌。" => {}
-            //                 "于公认比赛中，在主卡组、副卡组及额外卡组合计每种最多只能使用1张的卡牌。" => {
-            //                     ct += 1;
-            //                 }
-            //                 "于公认比赛中，在主卡组、副卡组及额外卡组合计每种最多只能使用2张的卡牌。" => {
-            //                     ct += 2;
-            //                 }
-            //                 _ => {}
-            //             }
-            //             for card_content in ul.select(&Selector::parse(".card-content").unwrap()) {
-            //                 if let Some(p) = card_content.select(&Selector::parse("span").unwrap()).next() {
-            //                     let name: String = p.text().collect::<String>();
-            //                     let find: Card = find_code(&name, 1).await?;
-            //                     let code: String = find.code;
-            //                     println!("{} {} --{}", code, ct, name);
-            //                     lines.push(format!("{} {} --{}", code, ct, name));
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            // }
+            lines.push("".to_string());
         }
         _ => {}
     }
+    if lines.len() == 0 { return Ok(()); }
     if !std::fs::metadata("lflist.conf").is_ok() {
         std::fs::write("lflist.conf", "")?;
     }
@@ -229,7 +191,7 @@ async fn main() -> Result<()> {
     for i in lines {
         writeln!(file, "{}", i)?;
     }
-    return Ok(())
+    Ok(())
 }
 
 fn find_ct (forbidden: String) ->  Result<i8> {
