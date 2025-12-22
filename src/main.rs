@@ -146,7 +146,7 @@ async fn main() -> Result<()> {
             let response: reqwest::Response = reqwest::get(url).await?;
             let body: CnLflist = response.json().await?;
             let text: String = body.name;
-            let re: Regex = Regex::new(r"第\d+次更新：([0-9]{4}/[0-9]{1,2})\s*适用").unwrap();
+            let re: Regex = Regex::new(r"第\d+[回次]更新：([0-9]{4}/[0-9]{1,2})(?:\s*更新|\s*适用)").unwrap();
             if let Some(captures) = re.captures(&text) {
                 if let Some(date_match) = captures.get(1) {
                     let mut date = date_match.as_str().split('/');
