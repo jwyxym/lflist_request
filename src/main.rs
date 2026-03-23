@@ -226,7 +226,7 @@ async fn find_code (name: &str, ot: usize) ->  Result<Card, Error> {
     }
     let name: String = name.replace("–", "");
     let search_name = encode(&name);
-    let url: String = format!("https://ygocdb.com/?search={}", search_name);
+    let url: String = format!("https://ygocdb-mirror.moecube.com/?search={}", search_name);
     let response: reqwest::Response = reqwest::get(url).await?;
     let body: String = response.text().await?;
     let body: Html = Html::parse_document(&body);
