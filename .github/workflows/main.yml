@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Build and Release
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       
@@ -28,13 +28,8 @@ jobs:
 
       - name: Build Release
         run: |
-          $parts = "${{ github.ref_name }}" -split '\.'
-          $ot = $parts[0]
-          $year = $parts[1]
-          $month = $parts[2]
-          $date = $parts[3]
-          cargo run --release $ot $year $month $date
-        shell: pwsh
+          IFS='.' read -ra parts <<< "${{ github.ref_name }}"
+          cargo run --release "${parts[0]}" "${parts[1]}" "${parts[2]}" "${parts[3]}"
       
       - name: Create Release
         id: create_release
@@ -46,16 +41,6 @@ jobs:
           release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-      
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/release/lflist_request.exe
-          asset_name: lflist_request.exe
-          asset_content_type: application/octet-stream
           
       - name: Upload Lflist Conf
         uses: actions/upload-release-asset@v1
