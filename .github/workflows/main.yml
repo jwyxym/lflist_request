@@ -21,6 +21,11 @@ jobs:
           toolchain: stable
           override: true
       
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './target -> release'
+
       - name: Build Release
         run: |
           $parts = "${{ github.ref_name }}" -split '\.'
